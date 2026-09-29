@@ -24,6 +24,11 @@ public final class PlayerBuilder {
     /**
      *
      */
+    private UUID teamId = null;
+
+    /**
+     *
+     */
     private String name = "Jugador 1";
 
     /**
@@ -66,6 +71,7 @@ public final class PlayerBuilder {
     public Player build() {
         return (Player.builder()
             .playerId(playerId)
+            .teamId(teamId)
             .name(name)
             .paternalSurname(paternalSurname)
             .maternalSurname(maternalSurname)

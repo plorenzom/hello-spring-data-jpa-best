@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.With;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 /**
  * @author Pablo Lorenzo Manzano.
@@ -14,6 +15,11 @@ import java.time.LocalDate;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class PlayerEntityBuilder {
+
+    /**
+     *
+     */
+    private UUID teamId = null;
 
     /**
      *
@@ -59,6 +65,7 @@ public final class PlayerEntityBuilder {
      */
     public PlayerEntity build() {
         PlayerEntity playerEntity = new PlayerEntity();
+        playerEntity.setTeamId(teamId);
         playerEntity.setName(name);
         playerEntity.setPaternalSurname(paternalSurname);
         playerEntity.setMaternalSurname(maternalSurname);

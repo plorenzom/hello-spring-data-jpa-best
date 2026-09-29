@@ -19,6 +19,11 @@ public record Player(
     /**
      *
      */
+    UUID teamId,
+
+    /**
+     *
+     */
     String name,
 
     /**

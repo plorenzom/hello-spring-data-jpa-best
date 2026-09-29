@@ -3,10 +3,13 @@ package es.thefactory.hellospringdatajpa.biz.service;
 import es.thefactory.hellospringdatajpa.biz.domain.Player;
 import es.thefactory.hellospringdatajpa.biz.domain.PlayerBuilder;
 import es.thefactory.hellospringdatajpa.biz.exception.PlayerNotFoundException;
+import es.thefactory.hellospringdatajpa.biz.exception.TeamNotFoundException;
 import es.thefactory.hellospringdatajpa.config.AppConfig;
 import es.thefactory.hellospringdatajpa.dal.entity.PlayerEntity;
 import es.thefactory.hellospringdatajpa.dal.entity.PlayerEntityBuilder;
+import es.thefactory.hellospringdatajpa.dal.entity.TeamEntityBuilder;
 import es.thefactory.hellospringdatajpa.dal.repo.PlayerRepository;
+import es.thefactory.hellospringdatajpa.dal.repo.TeamRepository;
 import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,16 +38,23 @@ class PlayerServiceIT {
     /**
      *
      */
+    private final TeamRepository teamRepository;
+
+    /**
+     *
+     */
     private final PlayerService playerService;
 
     /**
      *
      * @param playerRepository
+     * @param teamRepository
      * @param playerService
      */
     @Autowired
-    PlayerServiceIT(PlayerRepository playerRepository, PlayerService playerService) {
+    PlayerServiceIT(PlayerRepository playerRepository, TeamRepository teamRepository, PlayerService playerService) {
         this.playerRepository = playerRepository;
+        this.teamRepository = teamRepository;
         this.playerService = playerService;
     }
 
@@ -54,6 +64,7 @@ class PlayerServiceIT {
     @BeforeEach
     void resetTestData() {
         playerRepository.deleteAllInBatch();
+        teamRepository.deleteAllInBatch();
     }
 
     /**
@@ -61,7 +72,9 @@ class PlayerServiceIT {
      */
     @Test
     void create_withAllFields_savesPlayer() {
-        Player inputPlayer = PlayerBuilder.aPlayer().build();
+        UUID teamId = teamRepository.save(TeamEntityBuilder.aTeam().build()).getTeamId();
+
+        Player inputPlayer = PlayerBuilder.aPlayer().withTeamId(teamId).build();
 
         assertPlayerCreation(inputPlayer);
     }
@@ -71,9 +84,24 @@ class PlayerServiceIT {
      */
     @Test
     void create_withOnlyRequiredFields_savesPlayer() {
-        Player inputPlayer = PlayerBuilder.aPlayer().withMaternalSurname(null).withNickname(null).build();
+        Player inputPlayer =
+            PlayerBuilder.aPlayer().withTeamId(null).withMaternalSurname(null).withNickname(null).build();
 
         assertPlayerCreation(inputPlayer);
+    }
+
+    /**
+     *
+     */
+    @Test
+    void create_whenTeamDoesNotExist_throwsTeamNotFoundException() {
+        UUID teamId = UUID.randomUUID();
+
+        Player inputPlayer = PlayerBuilder.aPlayer().withTeamId(teamId).build();
+
+        assertThatThrownBy(() -> playerService.create(inputPlayer)).isInstanceOf(TeamNotFoundException.class);
+
+        assertThat(playerRepository.count()).isZero();
     }
 
     /**
@@ -177,10 +205,13 @@ class PlayerServiceIT {
      */
     @Test
     void update_whenPlayerExists_updatesPlayer() {
-        UUID playerId = playerRepository.save(PlayerEntityBuilder.aPlayer().build()).getPlayerId();
+        UUID teamId = teamRepository.save(TeamEntityBuilder.aTeam().build()).getTeamId();
+
+        UUID playerId = playerRepository.save(PlayerEntityBuilder.aPlayer().withTeamId(teamId).build()).getPlayerId();
 
         Player inputPlayer = PlayerBuilder.aPlayer()
             .withPlayerId(playerId)
+            .withTeamId(null)
             .withName("Jugador X")
             .withPaternalSurname("Apellido X")
             .withMaternalSurname(null)
@@ -196,6 +227,24 @@ class PlayerServiceIT {
         assertThat(optionalPlayerEntity).isPresent();
         PlayerEntity actualPlayerEntity = optionalPlayerEntity.get();
         assertThat(actualPlayerEntity).usingRecursiveComparison().isEqualTo(inputPlayer);
+    }
+
+    /**
+     *
+     */
+    @Test
+    void update_whenTeamDoesNotExist_throwsTeamNotFoundException() {
+        PlayerEntity actualPlayerEntity = playerRepository.save(PlayerEntityBuilder.aPlayer().build());
+
+        UUID playerId = actualPlayerEntity.getPlayerId();
+        UUID teamId = UUID.randomUUID();
+
+        Player inputPlayer = PlayerBuilder.aPlayer().withPlayerId(playerId).withTeamId(teamId).build();
+
+        assertThatThrownBy(() -> playerService.update(inputPlayer)).isInstanceOf(TeamNotFoundException.class);
+
+        assertThat(playerRepository.findById(playerId).orElseThrow()).usingRecursiveComparison()
+            .isEqualTo(actualPlayerEntity);
     }
 
     /**

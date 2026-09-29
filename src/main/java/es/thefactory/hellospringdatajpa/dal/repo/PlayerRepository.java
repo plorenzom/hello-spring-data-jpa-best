@@ -18,4 +18,11 @@ public interface PlayerRepository extends JpaRepository<PlayerEntity, UUID> {
      * @return Número de registros eliminados (0 o 1).
      */
     int deleteByPlayerId(UUID playerId);
+
+    /**
+     *
+     * @param teamId
+     * @return boolean
+     */
+    boolean existsByTeamId(UUID teamId);
 }

@@ -2,10 +2,13 @@ package es.thefactory.hellospringdatajpa.biz.service;
 
 import es.thefactory.hellospringdatajpa.biz.domain.Team;
 import es.thefactory.hellospringdatajpa.biz.domain.TeamBuilder;
+import es.thefactory.hellospringdatajpa.biz.exception.TeamHasPlayersException;
 import es.thefactory.hellospringdatajpa.biz.exception.TeamNotFoundException;
 import es.thefactory.hellospringdatajpa.config.AppConfig;
+import es.thefactory.hellospringdatajpa.dal.entity.PlayerEntityBuilder;
 import es.thefactory.hellospringdatajpa.dal.entity.TeamEntity;
 import es.thefactory.hellospringdatajpa.dal.entity.TeamEntityBuilder;
+import es.thefactory.hellospringdatajpa.dal.repo.PlayerRepository;
 import es.thefactory.hellospringdatajpa.dal.repo.TeamRepository;
 import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +32,11 @@ class TeamServiceIT {
     /**
      *
      */
+    private final PlayerRepository playerRepository;
+
+    /**
+     *
+     */
     private final TeamRepository teamRepository;
 
     /**
@@ -38,11 +46,13 @@ class TeamServiceIT {
 
     /**
      *
+     * @param playerRepository
      * @param teamRepository
      * @param teamService
      */
     @Autowired
-    TeamServiceIT(TeamRepository teamRepository, TeamService teamService) {
+    TeamServiceIT(PlayerRepository playerRepository, TeamRepository teamRepository, TeamService teamService) {
+        this.playerRepository = playerRepository;
         this.teamRepository = teamRepository;
         this.teamService = teamService;
     }
@@ -52,6 +62,7 @@ class TeamServiceIT {
      */
     @BeforeEach
     void resetTestData() {
+        playerRepository.deleteAllInBatch();
         teamRepository.deleteAllInBatch();
     }
 
@@ -97,6 +108,20 @@ class TeamServiceIT {
         teamService.deleteById(teamId);
 
         assertThat(teamRepository.existsById(teamId)).isFalse();
+    }
+
+    /**
+     *
+     */
+    @Test
+    void deleteById_whenTeamHasPlayers_throwsTeamHasPlayersException() {
+        UUID teamId = teamRepository.save(TeamEntityBuilder.aTeam().build()).getTeamId();
+
+        playerRepository.save(PlayerEntityBuilder.aPlayer().withTeamId(teamId).build());
+
+        assertThatThrownBy(() -> teamService.deleteById(teamId)).isInstanceOf(TeamHasPlayersException.class);
+
+        assertThat(teamRepository.existsById(teamId)).isTrue();
     }
 
     /**

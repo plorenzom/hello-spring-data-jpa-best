@@ -33,6 +33,12 @@ public class PlayerEntity implements Identifiable {
     /**
      *
      */
+    @Column(name = "team_id")
+    private UUID teamId;
+
+    /**
+     *
+     */
     @NotBlank
     @Size(max = 25)
     @Column(name = "name", length = 25, nullable = false)

@@ -1,9 +1,11 @@
 package es.thefactory.hellospringdatajpa.biz.service;
 
 import es.thefactory.hellospringdatajpa.biz.domain.Team;
+import es.thefactory.hellospringdatajpa.biz.exception.TeamHasPlayersException;
 import es.thefactory.hellospringdatajpa.biz.exception.TeamNotFoundException;
 import es.thefactory.hellospringdatajpa.biz.mapper.TeamMapper;
 import es.thefactory.hellospringdatajpa.dal.entity.TeamEntity;
+import es.thefactory.hellospringdatajpa.dal.repo.PlayerRepository;
 import es.thefactory.hellospringdatajpa.dal.repo.TeamRepository;
 import es.thefactory.hellospringdatajpa.dal.validation.EntityValidator;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +36,11 @@ public class TeamService {
     /**
      *
      */
+    private final PlayerRepository playerRepository;
+
+    /**
+     *
+     */
     private final TeamRepository teamRepository;
 
     /**
@@ -55,6 +62,10 @@ public class TeamService {
      */
     @Transactional
     public void deleteById(UUID teamId) {
+        if (playerRepository.existsByTeamId(teamId)) {
+            throw new TeamHasPlayersException();
+        }
+
         if (teamRepository.deleteByTeamId(teamId) == 0) {
             throw new TeamNotFoundException();
         }
